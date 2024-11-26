@@ -20,7 +20,7 @@
 x64/
 x86/
 bld/
-[Bb]in/
+#[Bb]in/
 [Oo]bj/
 [Ll]og/
 
@@ -105,7 +105,12 @@ ipch/
 *.vsp
 *.vspx
 *.sap
+
+# Models and textures
 *.g3dm
+*.dae
+*.g24
+*.g32
 
 # Visual Studio Trace Files
 *.e2e

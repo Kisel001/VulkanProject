@@ -51,7 +51,370 @@ namespace pivk
    * RETURNS:
    *   (shader &) self reference.
    */
-  shader & shader::Load(render *NewRnd)
+  shader & shader::Load( render *NewRnd )
+  {
+    struct
+    {
+      std::string Suff; // Shader file name
+      VkShaderModule &Module;
+      std::string CompilerParam; // Shader file name
+    } shdr[] =
+    {
+      {"vert", ShaderModuleVert, "vert"},
+      {"ctrl", ShaderModuleCtrl, "tesc"},
+      {"eval", ShaderModuleEval, "tese"},
+      {"geom", ShaderModuleGeom, "geom"},
+      {"frag", ShaderModuleFrag, "frag"},
+    };
+    BOOL isok = TRUE;
+
+    /* Load shaders */
+    for (auto &s : shdr)
+    {
+      std::string fn = "bin/shaders/" + Name + "/" + s.Suff; // + ".glsl";
+      std::fstream f(fn + ".glsl");
+      /* Check for text file presence */
+      if (!f.is_open())
+        if (s.Suff != "vert" && s.Suff != "frag")
+          continue;
+        else
+        {
+          Log(s.Suff, "No file");
+          isok = FALSE;
+          break;
+        }
+      f.close();
+
+      // Compile shader
+      std::string cmd = "glslc -Ibin/shaders/include -fshader-stage=" + s.CompilerParam + " -o " + fn + ".spv " + fn + ".glsl 2> compile.log";
+      std::system(cmd.c_str());
+
+      //SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 0x1E); 
+      std::cout << "Recompile shader:";
+      //SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 0x07); 
+      std::cout << " Shader: ";
+      //SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 0x0E); 
+      std::cout << "[" + Name + "] ";
+      //SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 0x0B); 
+      std::cout << s.Suff + "\n";
+
+      // Check for errors
+      std::string err = LoadTextFile("compile.log");
+      std::remove("compile.log");
+      if (err != "")
+      {
+        Log(s.Suff, "Compile errors:\n" + err);
+        isok = FALSE;
+        //SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 0x4E); 
+        std::cout << "Compile errors:";
+        //SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 0x07); 
+        std::cout << " Shader: ";
+        //SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 0x0E); 
+        std::cout << "[" + Name + "] ";
+        //SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 0x0B); 
+        std::cout << s.Suff + "\n";
+        //SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 0x0F); 
+        std::cout << err << std::endl;
+        //break;
+      }
+
+      // Load shader copiled SPIR-V byte code
+      std::vector<BYTE> SpirvBinBuf;
+      if (LoadSPIRVShader(fn + ".spv", SpirvBinBuf) == FALSE)
+        if (s.Suff != "vert" && s.Suff != "frag")
+          continue;
+        else
+        {
+          Log(s.Suff, "SPIR-V load error");
+          isok = FALSE;
+          break;
+        }
+
+      /* Vulkan shader module create info structure */
+      VkShaderModuleCreateInfo ShaderModuleCreateInfo
+      {
+        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,          // Structure type.
+        .codeSize = SpirvBinBuf.size(),                                // Byte code size.
+        .pCode = reinterpret_cast<const UINT32 *>(SpirvBinBuf.data()), // Pointer to byte-code.
+      };
+
+      if (vkCreateShaderModule(Rnd->VulkanCore.Device, // Vulkan core logical device.
+          &ShaderModuleCreateInfo,                     // Information about creating.
+          nullptr,                                     // Allocator (optional).
+          &s.Module) != VK_SUCCESS)                    // Pointer to creating VkShaderModule module.
+      {
+        isok = FALSE;
+        break;
+      }
+
+      //if ((s.Module = LoadSPIRVShader(fn + ".spv")) == VK_NULL_HANDLE)
+      //  if (s.Suff != "vert" && s.Suff != "frag")
+      //    continue;
+      //  else
+      //  {
+      //    Log(s.Suff, "SPIR-V load error");
+      //    isok = FALSE;
+      //    break;
+      //  }
+    }
+    //IsReload = TRUE;
+
+    if (!isok)
+      for (auto s : shdr)
+        if (s.Module != VK_NULL_HANDLE)
+          vkDestroyShaderModule(Rnd->VulkanCore.Device, s.Module, nullptr), s.Module = VK_NULL_HANDLE;
+
+    //std::array<VkPipelineShaderStageCreateInfo, 2> ShaderStageInfo =
+    //{
+    //  VertShaderStageInfo, FragShaderStageInfo,
+    //};
+
+    std::vector<VkPipelineShaderStageCreateInfo> ShaderStageInfoArr;
+    ShaderStageInfoArr.reserve(6);
+
+    // Vertex shader
+    if (ShaderModuleVert != VK_NULL_HANDLE)
+    {
+      VkPipelineShaderStageCreateInfo ShaderStageInfo
+      {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .stage = VK_SHADER_STAGE_VERTEX_BIT,
+        .module = ShaderModuleVert,
+        .pName = "main",
+      };
+
+      ShaderStageInfoArr.push_back(ShaderStageInfo);
+    }
+    // Fragment shader
+    if (ShaderModuleFrag != VK_NULL_HANDLE)
+    {
+      VkPipelineShaderStageCreateInfo ShaderStageInfo
+      {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+        .module = ShaderModuleFrag,
+        .pName = "main",
+      };
+
+      ShaderStageInfoArr.push_back(ShaderStageInfo);
+    }
+    // Geometry shader
+    if (ShaderModuleGeom != VK_NULL_HANDLE)
+    {
+      VkPipelineShaderStageCreateInfo ShaderStageInfo
+      {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .stage = VK_SHADER_STAGE_GEOMETRY_BIT,
+        .module = ShaderModuleGeom,
+        .pName = "main",
+      };
+
+      ShaderStageInfoArr.push_back(ShaderStageInfo);
+    }
+    // Control shader
+    if (ShaderModuleCtrl != VK_NULL_HANDLE)
+    {
+      VkPipelineShaderStageCreateInfo ShaderStageInfo
+      {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+        .module = ShaderModuleCtrl,
+        .pName = "main",
+      };
+
+      ShaderStageInfoArr.push_back(ShaderStageInfo);
+    }
+    // Evaluation shader
+    if (ShaderModuleEval != VK_NULL_HANDLE)
+    {
+      VkPipelineShaderStageCreateInfo ShaderStageInfo
+      {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+        .module = ShaderModuleEval,
+        .pName = "main",
+      };
+
+      ShaderStageInfoArr.push_back(ShaderStageInfo);
+    }
+
+    //uint32_t                                    vertexBindingDescriptionCount;
+    //const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+    //uint32_t                                    vertexAttributeDescriptionCount;
+    //const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+
+    std::array<VkVertexInputAttributeDescription, 3> AttributesDescription = {};
+    VkVertexInputBindingDescription BindingDescription = 
+    {
+      .binding = 0,
+      .stride = sizeof(FLOAT) * 8,
+      .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+    };
+
+    // Position
+    AttributesDescription[0].binding = 0;
+    AttributesDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    AttributesDescription[0].location = 0;
+    AttributesDescription[0].offset = 0;
+
+    // TC
+    AttributesDescription[1].binding = 0;
+    AttributesDescription[1].format = VK_FORMAT_R32G32_SFLOAT;
+    AttributesDescription[1].location = 1;
+    AttributesDescription[1].offset = sizeof(FLOAT) * 3;
+
+    // Normals
+    AttributesDescription[2].binding = 0;
+    AttributesDescription[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+    AttributesDescription[2].location = 2;
+    AttributesDescription[2].offset = sizeof(FLOAT) * 3 + sizeof(FLOAT) * 2;
+
+    // Setup vertex input
+    VkPipelineVertexInputStateCreateInfo  VertexInputInfo = 
+    {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+      .vertexBindingDescriptionCount = 1,
+      .pVertexBindingDescriptions = &BindingDescription,
+      .vertexAttributeDescriptionCount = UINT32(AttributesDescription.size()),
+      .pVertexAttributeDescriptions = AttributesDescription.data(),
+    };
+
+    // Setup vertex assembly
+    VkPipelineInputAssemblyStateCreateInfo InputAssembly = 
+    {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+      .pNext = nullptr,
+      .flags = 0,
+      //.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+      .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+      .primitiveRestartEnable = VK_FALSE,
+    };
+
+    // Setup viewport state
+    VkPipelineViewportStateCreateInfo ViewportState = 
+    {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+      .pNext = nullptr,
+      .flags = 0,
+      .viewportCount = 1,
+      .pViewports = &Rnd->VulkanCore.Viewport,
+      .scissorCount = 1,
+      .pScissors = &Rnd->VulkanCore.Scissor,
+    };
+
+    // Setup rasterizer
+    VkPipelineRasterizationStateCreateInfo Rasterizer = 
+    {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+      .pNext = nullptr,
+      .flags = 0,
+      .depthClampEnable = VK_FALSE,
+      .rasterizerDiscardEnable = VK_FALSE,
+      .polygonMode = VK_POLYGON_MODE_FILL,
+      .cullMode = VK_CULL_MODE_NONE,//VK_CULL_MODE_BACK_BIT,
+      .frontFace = VK_FRONT_FACE_CLOCKWISE,
+      .depthBiasEnable = VK_FALSE,
+      .depthBiasConstantFactor = 0.0f,
+      .depthBiasClamp = 0.0f,
+      .depthBiasSlopeFactor = 0.0f,
+      .lineWidth = 1.0f,
+    };
+
+    // Setup multisampling
+    VkPipelineMultisampleStateCreateInfo  Multisampling = 
+    {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+      .pNext = nullptr,
+      .flags = 0,
+      .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+      .sampleShadingEnable = VK_FALSE,
+      .minSampleShading = 1.0f,
+      .pSampleMask = nullptr,            // Optional
+      .alphaToCoverageEnable = VK_FALSE, // Optional
+      .alphaToOneEnable = VK_FALSE,      // Optional
+    };
+
+    // Setup color blending
+    VkPipelineColorBlendAttachmentState  ColorBlendAttachment =
+    {
+      .blendEnable = VK_FALSE,
+      .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+      .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+      .colorBlendOp = VK_BLEND_OP_ADD,
+      .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+      .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+      .alphaBlendOp = VK_BLEND_OP_ADD,
+      .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+    };
+
+    // Setup color blend state
+    VkPipelineColorBlendStateCreateInfo ColorBlending =
+    {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+      .pNext = nullptr,
+      .flags = 0,
+      .logicOpEnable = VK_FALSE,
+      .logicOp = VK_LOGIC_OP_COPY,
+      .attachmentCount = 1,
+      .pAttachments = &ColorBlendAttachment,
+      .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
+    };
+
+    // Vulkan pipeline depth stencil state create info structure
+    VkPipelineDepthStencilStateCreateInfo DepthStencil {};
+
+    DepthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    DepthStencil.depthTestEnable = VK_TRUE;
+    DepthStencil.depthWriteEnable = VK_TRUE;
+    DepthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    DepthStencil.depthBoundsTestEnable = VK_FALSE;
+    DepthStencil.minDepthBounds = 0.0f; // Optional
+    DepthStencil.maxDepthBounds = 1.0f; // Optional
+    DepthStencil.stencilTestEnable = VK_FALSE;
+    DepthStencil.front = {}; // Optional
+    DepthStencil.back = {}; // Optional
+
+    // Graphics pipeline creare info
+    VkGraphicsPipelineCreateInfo PipelineInfo =
+    {
+      .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+      .pNext = nullptr,
+      .flags = 0,
+      .stageCount = UINT32(ShaderStageInfoArr.size()),
+      .pStages = ShaderStageInfoArr.data(),
+      .pVertexInputState = &VertexInputInfo,
+      .pInputAssemblyState = &InputAssembly,
+      .pTessellationState = nullptr,
+      .pViewportState = &ViewportState,
+      .pRasterizationState = &Rasterizer,
+      .pMultisampleState = &Multisampling,
+      .pDepthStencilState = &DepthStencil,  // Optional
+      .pColorBlendState = &ColorBlending,
+      .pDynamicState = nullptr,
+      .layout = Rnd->VulkanCore.PipelineLayout,
+      .renderPass = Rnd->VulkanCore.RenderPass,
+      .subpass = 0,
+      .basePipelineHandle = nullptr,
+      .basePipelineIndex = 0,
+    };
+
+    if (vkCreateGraphicsPipelines(Rnd->VulkanCore.Device, VK_NULL_HANDLE, 1, &PipelineInfo, nullptr, &Pipeline) != VK_SUCCESS )
+    {
+      throw;
+    }
+
+    return *this;
+  } /* End of 'Load' function */
+
+#if 0
+  /* Load shader function.
+   * ARGUMENTS: None.
+   *   - pointer to new render:
+   *       render *NewRnd;
+   * RETURNS:
+   *   (shader &) self reference.
+   */
+  shader & shader::Load( render *NewRnd )
   {
     if (NewRnd != nullptr)
       Rnd = NewRnd;
@@ -106,7 +469,7 @@ namespace pivk
     if (vkCreateShaderModule(Rnd->VulkanCore.Device,                 // Vulkan core logical device.
                              &FragInfo,                              // Information about creating.
                              nullptr,                                // Allocator (optional).
-                             &ShaderModules[FRAG]) != VK_SUCCESS)    // Pointer to creating VkShaderModule module.
+                             &ShaderModuleFrag) != VK_SUCCESS)    // Pointer to creating VkShaderModule module.
     {
       throw;
     }
@@ -115,7 +478,7 @@ namespace pivk
     if (vkCreateShaderModule(Rnd->VulkanCore.Device,                 // Vulkan core logical device.
                              &VertInfo,                              // Information about creating.
                              nullptr,                                // Allocator (optional).
-                             &ShaderModules[VERT]) != VK_SUCCESS)    // Pointer to creating VkShaderModule module.
+                             &ShaderModuleVert) != VK_SUCCESS)    // Pointer to creating VkShaderModule module.
     {
       throw;
     }
@@ -131,7 +494,7 @@ namespace pivk
     {
       .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
       .stage = VK_SHADER_STAGE_VERTEX_BIT,
-      .module = ShaderModules[VERT],
+      .module = ShaderModuleVert,
       .pName = "main",
     };
     // Frag shader info
@@ -139,7 +502,7 @@ namespace pivk
     {
       .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
       .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-      .module = ShaderModules[FRAG],
+      .module = ShaderModuleFrag,
       .pName = "main",
     };
     // Geom shader info
@@ -325,6 +688,7 @@ namespace pivk
 
     return *this;
   } /* End of 'shader::Load' function */
+#endif
 
   /* Apply shader function.
    * ARGUMENTS: None.
@@ -365,8 +729,18 @@ namespace pivk
     //vkDestroyPipelineLayout(Rnd->VulkanCore.Device, PipelineLayout, nullptr);
     vkDestroyPipeline(Rnd->VulkanCore.Device, Pipeline, nullptr);
 
-    for (auto &ShaderModule : ShaderModules)
-      vkDestroyShaderModule(Rnd->VulkanCore.Device, ShaderModule.second, nullptr);
+    if (ShaderModuleCtrl != VK_NULL_HANDLE)
+      vkDestroyShaderModule(Rnd->VulkanCore.Device, ShaderModuleCtrl, nullptr);
+    if (ShaderModuleEval != VK_NULL_HANDLE)
+      vkDestroyShaderModule(Rnd->VulkanCore.Device, ShaderModuleEval, nullptr);
+    if (ShaderModuleFrag != VK_NULL_HANDLE)
+      vkDestroyShaderModule(Rnd->VulkanCore.Device, ShaderModuleFrag, nullptr);
+    if (ShaderModuleVert != VK_NULL_HANDLE)
+      vkDestroyShaderModule(Rnd->VulkanCore.Device, ShaderModuleVert, nullptr);
+    if (ShaderModuleGeom)
+      vkDestroyShaderModule(Rnd->VulkanCore.Device, ShaderModuleGeom, nullptr);
+    //for (auto &ShaderModule : ShaderModules)
+    //  vkDestroyShaderModule(Rnd->VulkanCore.Device, ShaderModule.second, nullptr);
     ///vkDestroyShaderModule(Rnd->VulkanCore.Device, // Logical device
     ///                      ShaderModule,           // Deleting object.
     ///                      nullptr);               // Memory allocator.

@@ -239,30 +239,6 @@ VOID pivk::marker_manager::DrawAllMarkers( VOID )
         .patchControlPoints = 1,
       };
 
-      // Viewport setup
-      VkViewport Viewport
-      {
-        .x = 0,
-        .y = 0,
-        .width = static_cast<FLT>(RndRef.Vlk.FrameW),
-        .height = static_cast<FLT>(RndRef.Vlk.FrameH),
-        .minDepth = -1,
-        .maxDepth = 1,
-      };
-      VkRect2D Scissors
-      {
-        .offset {.x = 0, .y = 0},
-        .extent {.width = RndRef.Vlk.FrameW, .height = RndRef.Vlk.FrameH}
-      };
-      VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo
-      {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-        .viewportCount = 1,
-        .pViewports = &Viewport,
-        .scissorCount = 1,
-        .pScissors = &Scissors,
-      };
-
       // Dynamic state setup
       std::vector<VkDynamicState> DynamicStates
       {
@@ -277,6 +253,18 @@ VOID pivk::marker_manager::DrawAllMarkers( VOID )
         .pDynamicStates = DynamicStates.data(),
       };
 
+      // Setup viewport state
+      VkPipelineViewportStateCreateInfo ViewportStateCreateInfo = 
+      {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .viewportCount = 1,
+        .pViewports = &RndRef.VulkanCore.Viewport,
+        .scissorCount = 1,
+        .pScissors = &RndRef.VulkanCore.Scissor,
+      };
+
       // Pipeline create struct filling
       VkGraphicsPipelineCreateInfo GraphicsPipelineCreateInfo
       {
@@ -286,21 +274,21 @@ VOID pivk::marker_manager::DrawAllMarkers( VOID )
         .pVertexInputState = &PipelineVertexInputStateCreateInfo,
         .pInputAssemblyState = &PipelineInputAssemblyStateCreateInfo,
         .pTessellationState = &PipelineTessellationStateCreateInfo,
-        .pViewportState = &PipelineViewportStateCreateInfo,
+        .pViewportState = &ViewportStateCreateInfo,
         .pRasterizationState = &PipelineRasterizationStateCreateInfo,
         .pMultisampleState = &PipelineMultisampleStateCreateInfo,
         .pDepthStencilState = &PipelineDepthStencilStateCreateInfo,
         .pColorBlendState = &PipelineColorBlendStateCreateInfo,
         .pDynamicState = &PipelineDynamicStateCreateInfo,
         .layout = PipelineLayouts[i],
-        .renderPass = RndRef.Vlk.RenderPass,
+        .renderPass = RndRef.VulkanCore.RenderPass,
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = -1,
       };
 
       if (Shds[i]->ShaderModuleVert != VK_NULL_HANDLE && Shds[i]->ShaderModuleFrag != VK_NULL_HANDLE)
       {
-        if (vkCreateGraphicsPipelines(RndRef.Vlk.Device, VK_NULL_HANDLE, 1, &GraphicsPipelineCreateInfo, nullptr, &Pipelines[i]) != VK_SUCCESS)
+        if (vkCreateGraphicsPipelines(RndRef.VulkanCore.Device, VK_NULL_HANDLE, 1, &GraphicsPipelineCreateInfo, nullptr, &Pipelines[i]) != VK_SUCCESS)
           throw "Error test pipeline creation";
       }
       else
@@ -309,40 +297,40 @@ VOID pivk::marker_manager::DrawAllMarkers( VOID )
   }
 
   // Draw markers:
-  static PFN_vkCmdSetPolygonModeEXT vkCmdSetPolygonModeEXT = reinterpret_cast<PFN_vkCmdSetPolygonModeEXT>(vkGetDeviceProcAddr(RndRef.Vlk.Device, "vkCmdSetPolygonModeEXT"));
+  static PFN_vkCmdSetPolygonModeEXT vkCmdSetPolygonModeEXT = reinterpret_cast<PFN_vkCmdSetPolygonModeEXT>(vkGetDeviceProcAddr(RndRef.VulkanCore.Device, "vkCmdSetPolygonModeEXT"));
   // reinterpret_cast<PFN_vkCmdSetPolygonModeEXT>(vkGetInstanceProcAddr(RndRef.Vlk.Instance, "vkCmdSetPolygonModeEXT"));
 
   if (vkCmdSetPolygonModeEXT != nullptr)
     if ((GetAsyncKeyState('W') & 0x8000) != 0 && (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0)
-      vkCmdSetPolygonModeEXT(RndRef.Vlk.CommandBuffer, VK_POLYGON_MODE_LINE);
+      vkCmdSetPolygonModeEXT(RndRef.VulkanCore.CommandBuffer, VK_POLYGON_MODE_LINE);
     else
-      vkCmdSetPolygonModeEXT(RndRef.Vlk.CommandBuffer, VK_POLYGON_MODE_FILL);
+      vkCmdSetPolygonModeEXT(RndRef.VulkanCore.CommandBuffer, VK_POLYGON_MODE_FILL);
 
   try
   {
-    if (Pipelines[0] != VK_NULL_HANDLE)
-    {
-      vkCmdBindDescriptorSets(RndRef.Vlk.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayouts[0],
-                              0, 1, &RndRef.Vlk.FrameDescriptorSet, 0, nullptr);
-      vkCmdBindPipeline(RndRef.Vlk.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines[0]);
-
-      struct  
-      {
-        matr::matr_data WVP, W, InvW;
-        vec4 CR, Color;
-      } bp {wvp, w, invw};
-
-      for (auto &sph : Spheres)
-      {
-        bp.CR = std::get<0>(sph);
-        bp.Color = std::get<1>(sph);
-        VkBuffer VertexBuffers[] = {VertexBuffer};
-        VkDeviceSize Offsets[] = {0};
-        vkCmdPushConstants(RndRef.Vlk.CommandBuffer, PipelineLayouts[0], VK_SHADER_STAGE_ALL_GRAPHICS/*VK_SHADER_STAGE_ALL*/, 0, sizeof(bp), &bp);
-        vkCmdBindVertexBuffers(RndRef.Vlk.CommandBuffer, 0, 1, VertexBuffers, Offsets);
-        vkCmdDraw(RndRef.Vlk.CommandBuffer, 1, 1, 0, 0);
-      }
-    }
+    //if (Pipelines[0] != VK_NULL_HANDLE)
+    //{
+    //  vkCmdBindDescriptorSets(RndRef.VulkanCore.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayouts[0],
+    //                          0, 1, &RndRef.VulkanCore.DescriptorSet, 0, nullptr);
+    //  vkCmdBindPipeline(RndRef.Vlk.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines[0]);
+    //
+    //  struct  
+    //  {
+    //    matr::matr_data WVP, W, InvW;
+    //    vec4 CR, Color;
+    //  } bp {wvp, w, invw};
+    //
+    //  for (auto &sph : Spheres)
+    //  {
+    //    bp.CR = std::get<0>(sph);
+    //    bp.Color = std::get<1>(sph);
+    //    VkBuffer VertexBuffers[] = {VertexBuffer};
+    //    VkDeviceSize Offsets[] = {0};
+    //    vkCmdPushConstants(RndRef.Vlk.CommandBuffer, PipelineLayouts[0], VK_SHADER_STAGE_ALL_GRAPHICS/*VK_SHADER_STAGE_ALL*/, 0, sizeof(bp), &bp);
+    //    vkCmdBindVertexBuffers(RndRef.Vlk.CommandBuffer, 0, 1, VertexBuffers, Offsets);
+    //    vkCmdDraw(RndRef.Vlk.CommandBuffer, 1, 1, 0, 0);
+    //  }
+    //}
   }
   catch ( std::exception &e )
   {
@@ -355,29 +343,29 @@ VOID pivk::marker_manager::DrawAllMarkers( VOID )
   }
   try
   {
-    if (Pipelines[1] != VK_NULL_HANDLE)
-    {
-      vkCmdBindDescriptorSets(RndRef.Vlk.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayouts[1],
-                              0, 1, &RndRef.Vlk.FrameDescriptorSet, 0, nullptr);
-      vkCmdBindPipeline(RndRef.Vlk.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines[1]);
-      struct  
-      {
-        matr::matr_data WVP, W, InvW;
-        vec4 PR0, PR1, Color;
-      } bp {wvp, w, invw};
-
-      for (auto &cyl : Cylinders)
-      {
-        bp.PR0 = std::get<0>(cyl);
-        bp.PR1 = std::get<1>(cyl);
-        bp.Color = std::get<2>(cyl);
-        VkBuffer VertexBuffers[] = {VertexBuffer};
-        VkDeviceSize Offsets[] = {0};
-        vkCmdPushConstants(RndRef.Vlk.CommandBuffer, PipelineLayouts[0], VK_SHADER_STAGE_ALL_GRAPHICS/*VK_SHADER_STAGE_ALL*/, 0, sizeof(bp), &bp);
-        vkCmdBindVertexBuffers(RndRef.Vlk.CommandBuffer, 0, 1, VertexBuffers, Offsets);
-        vkCmdDraw(RndRef.Vlk.CommandBuffer, 1, 1, 0, 0);
-      }
-    }
+    //if (Pipelines[1] != VK_NULL_HANDLE)
+    //{
+    //  vkCmdBindDescriptorSets(RndRef.Vlk.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayouts[1],
+    //                          0, 1, &RndRef.Vlk.FrameDescriptorSet, 0, nullptr);
+    //  vkCmdBindPipeline(RndRef.Vlk.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines[1]);
+    //  struct  
+    //  {
+    //    matr::matr_data WVP, W, InvW;
+    //    vec4 PR0, PR1, Color;
+    //  } bp {wvp, w, invw};
+    //
+    //  for (auto &cyl : Cylinders)
+    //  {
+    //    bp.PR0 = std::get<0>(cyl);
+    //    bp.PR1 = std::get<1>(cyl);
+    //    bp.Color = std::get<2>(cyl);
+    //    VkBuffer VertexBuffers[] = {VertexBuffer};
+    //    VkDeviceSize Offsets[] = {0};
+    //    vkCmdPushConstants(RndRef.Vlk.CommandBuffer, PipelineLayouts[0], VK_SHADER_STAGE_ALL_GRAPHICS/*VK_SHADER_STAGE_ALL*/, 0, sizeof(bp), &bp);
+    //    vkCmdBindVertexBuffers(RndRef.Vlk.CommandBuffer, 0, 1, VertexBuffers, Offsets);
+    //    vkCmdDraw(RndRef.Vlk.CommandBuffer, 1, 1, 0, 0);
+    //  }
+    //}
   }
   catch ( std::exception &e )
   {

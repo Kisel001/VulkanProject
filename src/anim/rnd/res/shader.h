@@ -174,13 +174,14 @@ namespace pivk
       CTRL = 4, // Control shader
     };
 
+  public:
     // Vulkan shader modules
     VkShaderModule
-      ShaderModuleVert, // Vertex shader
-      ShaderModuleCtrl, // Control shader
-      ShaderModuleEval, // Evaluation shader
-      ShaderModuleGeom, // Geometry shader
-      ShaderModuleFrag; // Fragment shader
+      ShaderModuleVert = VK_NULL_HANDLE, // Vertex shader
+      ShaderModuleCtrl = VK_NULL_HANDLE, // Control shader
+      ShaderModuleEval = VK_NULL_HANDLE, // Evaluation shader
+      ShaderModuleGeom = VK_NULL_HANDLE, // Geometry shader
+      ShaderModuleFrag = VK_NULL_HANDLE; // Fragment shader
 
     //std::map<TypeOfShader, VkShaderModule> ShaderModules;
     // Vulkan shader pipeline
@@ -240,6 +241,12 @@ namespace pivk
       //Watcher.StopWatch();
     } /* End of '~shader' function */
  
+    /* Init pipeline function.
+     * ARGUMENTS: None.
+     * RETURNS: None.
+     */
+
+
     /* Apply shader function.
      * ARGUMENTS: None.
      * RETURNS:
@@ -303,6 +310,19 @@ namespace pivk
       //return resource_manager::Find(FileNamePrefix);
       //return resource_manager::Add(shader(FileNamePrefix).Load());
     } /* End of 'ShdCreate' function */
+
+    /* Create shader function.
+     * ARGUMENTS:
+     *   - pointer to shader:
+     *       shader *Shd;
+     * RETURNS:
+     *   (shader *) this shader.
+     */
+    shader * ShdLoad( shader *Shd )
+    {
+      Shd->Load(&RndRef);
+      return Shd;
+    } /* End of 'ShdLoad' function */
 
     /* Find shader by name.
      * ARGUMENTS:

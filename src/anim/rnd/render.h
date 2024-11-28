@@ -17,9 +17,6 @@
 #define __render_h_
 
 #include "res/image.h"
-#include "res/prim.h"
-#include "res/texture.h"
-#include "res/buffer.h"
 #include "res/model.h"
 #include "res/target.h"
 #include "res/markers.h"
@@ -32,7 +29,7 @@ namespace pivk
 
   /* Render class */
   class render : 
-    public primitive_manager, public material_manager, public texture_manager, public buffer_manager, public shader_manager, public model_manager
+    public primitive_manager, public material_manager, public texture_manager, public buffer_manager, public shader_manager, public model_manager , public pipeline_pattern_manager
   {
   private:
     HWND &hWnd;              // Window context
@@ -89,7 +86,7 @@ namespace pivk
      */
     render( HWND &hNewWnd, anim &Ani ) : 
       hWnd(hNewWnd), ProjSize(0.1f), ProjFarClip(1000.0f), FrameW(47), FrameH(47), Camera(),
-      primitive_manager(*this), material_manager(*this), texture_manager(*this), buffer_manager(*this), shader_manager(*this), model_manager(*this),
+      primitive_manager(*this), material_manager(*this), texture_manager(*this), buffer_manager(*this), shader_manager(*this), model_manager(*this), pipeline_pattern_manager(*this),
       AnimRef(Ani), VulkanCore(hNewWnd)
     {
     } /* End of 'render' function */

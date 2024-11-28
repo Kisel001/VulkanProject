@@ -146,25 +146,29 @@ namespace pivk
 
   /* Vec2 declare types */
   typedef mth::vec2<FLT>  vec2;
-  typedef mth::vec2<DBL>  fvec2;
+  typedef mth::vec2<FLT>  fvec2;
+  typedef mth::vec2<DBL>  dvec2;
   typedef mth::vec2<INT>  ivec2;
   typedef mth::vec2<BOOL> bvec2;
 
   /* Vec3 declare types */
   typedef mth::vec3<FLT>  vec3;
-  typedef mth::vec3<DBL>  fvec3;
+  typedef mth::vec3<FLT>  fvec3;
+  typedef mth::vec3<DBL>  dvec3;
   typedef mth::vec3<INT>  ivec3;
   typedef mth::vec3<BOOL> bvec3;
 
   /* Vec4 declare types */
   typedef mth::vec4<FLT>  vec4;
-  typedef mth::vec4<DBL>  fvec4;
+  typedef mth::vec4<FLT>  fvec4;
+  typedef mth::vec4<DBL>  dvec4;
   typedef mth::vec4<INT>  ivec4;
   typedef mth::vec4<BOOL> bvec4;
 
   /* Matrix declare types */
   typedef mth::matr<FLT>  matr;
-  typedef mth::matr<DBL>  fmatr;
+  typedef mth::matr<FLT>  fmatr;
+  typedef mth::matr<DBL>  dmatr;
   typedef mth::matr<INT>  imatr;
   typedef mth::matr<BOOL> bmatr;
 

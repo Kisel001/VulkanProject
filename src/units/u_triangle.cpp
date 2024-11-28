@@ -22,11 +22,12 @@ namespace pivk
   class unit_triangle : public unit
   {
   public:
-    shader *Shd;   // Pointer to shader
-    prim *Pr;      // Pointer to primitive
-    texture *Tex;  // Pointer to texture
-    material *Mtl; // Pointer to material
-    dae DaeParser; // DAE parser
+    pipeline_pattern *PipelinePattern; // Pipeline pattern
+    shader *Shd;                       // Pointer to shader
+    prim *Pr;                          // Pointer to primitive
+    texture *Tex;                      // Pointer to texture
+    material *Mtl;                     // Pointer to material
+    dae DaeParser;                     // DAE parser
 
     /* Unit triangle constructor.
      * ARGUMENTS:
@@ -39,7 +40,12 @@ namespace pivk
 
       DaeParser.LoadGeometry(PrimsData);
 
-      Shd = A.ShdCreate("test");
+      PipelinePattern = A.PipelinePatternFind("Zebra pattern");
+
+      PipelinePattern->Add("Position", GetAttributeDescription(0, VK_FORMAT_R32G32B32_SFLOAT, 0));
+      PipelinePattern->Add("TC", GetAttributeDescription(1, VK_FORMAT_R32G32_SFLOAT, sizeof(vec3)));
+      PipelinePattern->Add("Normal", GetAttributeDescription(2, VK_FORMAT_R32G32B32_SFLOAT, sizeof(vec3) + sizeof(vec2)));
+      Shd = A.ShdCreate("test", PipelinePattern);
 
       image Img {"bin/textures/M.G24", img_type::G24};
 

@@ -42,7 +42,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -187,6 +187,7 @@
     <ClCompile Include="src\anim\rnd\res\markers.cpp" />
     <ClCompile Include="src\anim\rnd\res\material.cpp" />
     <ClCompile Include="src\anim\rnd\res\model.cpp" />
+    <ClCompile Include="src\anim\rnd\res\pipeline_pattern.cpp" />
     <ClCompile Include="src\anim\rnd\res\prim.cpp" />
     <ClCompile Include="src\anim\rnd\res\shader.cpp" />
     <ClCompile Include="src\anim\rnd\res\target.cpp" />
@@ -242,6 +243,7 @@
     <ClInclude Include="src\anim\rnd\res\markers.h" />
     <ClInclude Include="src\anim\rnd\res\material.h" />
     <ClInclude Include="src\anim\rnd\res\model.h" />
+    <ClInclude Include="src\anim\rnd\res\pipeline_pattern.h" />
     <ClInclude Include="src\anim\rnd\res\prim.h" />
     <ClInclude Include="src\anim\rnd\res\res.h" />
     <ClInclude Include="src\anim\rnd\res\shader.h" />

@@ -16,7 +16,7 @@
 #ifndef __shader_h_
 #define __shader_h_
 
-#include "res.h"
+#include "pipeline_pattern.h"
 
 /* Base project namespace */
 namespace pivk
@@ -145,13 +145,15 @@ namespace pivk
     std::string LoadTextFile( const std::string &FileName );
  
     /* Load shader function.
-     * ARGUMENTS:
-     *   - pointer to render:
+     * ARGUMENTS: None.
+     *   - new pipeline pattern:
+     *       pipeline_pattern *NewPipelinePattern;
+     *   - pointer to new render:
      *       render *NewRnd;
      * RETURNS:
      *   (shader &) self reference.
      */
-    shader & Load( render *NewRnd = nullptr );
+    shader & Load( pipeline_pattern *NewPipelinePattern = nullptr, render *NewRnd = nullptr );
  
   public:
     /* Free shader function.
@@ -215,6 +217,9 @@ namespace pivk
     std::map<std::string, ATTR_INFO> Attributes, Uniforms;
     // Shader storage blocks informations (type, index, bind point)
     std::map<std::string, BLOCK_INFO> SSBOBuffers;
+
+    // Pipeline pattern 
+    pipeline_pattern *PipelinePattern;
  
 //#if 0
     /* Class default constructor */
@@ -299,28 +304,28 @@ namespace pivk
      * ARGUMENTS:
      *   - shader file name prefix:
      *       const std::string &FileNamePrefix;
+     *   - pipeline pattern (nullptr if using old):
+     *       pipeline_pattern *PipelinePattern;
      * RETURNS:
      *   (shader *) created primitive interface.
      */
-    shader * ShdCreate( const std::string &FileNamePrefix )
+    shader * ShdCreate( const std::string &FileNamePrefix, pipeline_pattern *PipelinePattern )
     {
-      return resource_manager::Add(shader(FileNamePrefix).Load(&RndRef));
-      //if (resource_manager::Find(FileNamePrefix) == nullptr)
-      //  return resource_manager::Add(shader(FileNamePrefix).Load());
-      //return resource_manager::Find(FileNamePrefix);
-      //return resource_manager::Add(shader(FileNamePrefix).Load());
+      return resource_manager::Add(shader(FileNamePrefix).Load(PipelinePattern, &RndRef));
     } /* End of 'ShdCreate' function */
 
     /* Create shader function.
      * ARGUMENTS:
      *   - pointer to shader:
      *       shader *Shd;
+     *   - pipeline pattern (nullptr if using old):
+     *       pipeline_pattern *PipelinePattern;
      * RETURNS:
      *   (shader *) this shader.
      */
-    shader * ShdLoad( shader *Shd )
+    shader * ShdLoad( shader *Shd, pipeline_pattern *PipelinePattern )
     {
-      Shd->Load(&RndRef);
+      Shd->Load(PipelinePattern, &RndRef);
       return Shd;
     } /* End of 'ShdLoad' function */
 
@@ -328,25 +333,19 @@ namespace pivk
      * ARGUMENTS:
      *   - shader name:
      *       const std::string &Name;
+     *   - pipeline pattern (nullptr if using old):
+     *       pipeline_pattern *PipelinePattern;
      * RETURNS:
      *   (shader *) pointer to shader, if shader finded, or nullptr, if no.
      */
-    shader * ShdFind( const std::string &Name )
+    shader * ShdFind( const std::string &Name, pipeline_pattern *PipelinePattern = nullptr )
     {
       shader *S = resource_manager::Find(Name);
 
       if (S != nullptr)
         return S;
-      return ShdCreate(Name);
+      return ShdCreate(Name, PipelinePattern);
     } /* End of 'ShdFind' function */
- 
-    ///* Class constructor.
-    // * ARGUMENTS: None.
-    // */
-    //shader_manager() : resource_manager()
-    //{
-    //   Watcher.StartWatch("bin/shaders");
-    //} /* End of 'shader_manager' function */
  
     /* Class destructor */
     ~shader_manager( VOID )

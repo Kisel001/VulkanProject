@@ -23,8 +23,8 @@
  */
 VOID pivk::marker_manager::Init( VOID )
 {
-  Shds[0] = RndRef.ShdCreate("markers/sphere");
-  Shds[1] = RndRef.ShdCreate("markers/cylinder");
+  //Shds[0] = RndRef.ShdCreate("markers/sphere");
+  //Shds[1] = RndRef.ShdCreate("markers/cylinder");
 
   // Pipeline layout setup
   std::vector<VkDescriptorSetLayout> DescriptorSetLayouts

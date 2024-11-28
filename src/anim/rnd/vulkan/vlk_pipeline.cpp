@@ -24,7 +24,7 @@ namespace pivk
    */
   VOID vlk::CreatePipelineLayout( VOID )
   {
-    CountOfDescriptorSets = 1;
+    CountOfDescriptorSets = 2;
 
     /* Create push constants range for pipeline layout */
     VkPushConstantRange Range {};
@@ -42,8 +42,8 @@ namespace pivk
       .flags = 0,
       .setLayoutCount = 2,                        // Optional
       .pSetLayouts = DescriptorSetLayouts.data(), // Optional
-      .pushConstantRangeCount = 1,                 // Optional
-      .pPushConstantRanges = &Range,               // Optional
+      .pushConstantRangeCount = 1,                // Optional
+      .pPushConstantRanges = &Range,              // Optional
     };
 
     // Create pipeline layout

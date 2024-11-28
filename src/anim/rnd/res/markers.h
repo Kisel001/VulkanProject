@@ -1,24 +1,24 @@
 /*************************************************************
-* Copyright (C) 2024
-*    Computer Graphics Support Group of 30 Phys-Math Lyceum
-*************************************************************/
+ * Copyright (C) 2024
+ *    Computer Graphics Support Group of 30 Phys-Math Lyceum
+ *************************************************************/
 
 /* FILE NAME   : markers.h
-* PURPOSE     : Animation pattern on Vulkan API project.
-*               Markers class declaration module.
-* PROGRAMMER  : CGSG'Jr'2024.
-*               Vitaly A. Galinsky.
-* LAST UPDATE : 26.11.2024.
-* NOTE        : Module namespace 'vigl'.
-*
-* No part of this file may be changed without agreement of
-* Computer Graphics Support Group of 30 Phys-Math Lyceum
-*/
+ * PURPOSE     : Animation pattern on Vulkan API project.
+ *               Markers class declaration module.
+ * PROGRAMMER  : CGSG'Sr'2023.
+ *               IP5.
+ * LAST UPDATE : 26.11.2024.
+ * NOTE        : Module namespace 'pivk'.
+ *
+ * No part of this file may be changed without agreement of
+ * Computer Graphics Support Group of 30 Phys-Math Lyceum
+ */
 
 #ifndef __markers_h_
 #define __markers_h_
 
-#include "res.h"
+//#include "res.h"
 #include "shader.h"
 //#include "../vulkan/vlk_core.h"
 

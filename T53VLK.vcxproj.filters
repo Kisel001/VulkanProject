@@ -147,6 +147,12 @@
     <ClCompile Include="src\anim\rnd\res\markers.cpp">
       <Filter>Source Files\Animation System\Rendering System\Resourses</Filter>
     </ClCompile>
+    <ClCompile Include="src\utils\xml\xml.cpp">
+      <Filter>Source Files\Utilites\Xml</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils\xml\dae.cpp">
+      <Filter>Source Files\Utilites</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\pivk.h">

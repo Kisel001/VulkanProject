@@ -6,10 +6,10 @@
 /* FILE NAME   : markers.cpp
  * PURPOSE     : Animation pattern on Vulkan API project.
  *               Markers class implementation module.
- * PROGRAMMER  : CGSG'Jr'2024.
- *               Vitaly A. Galinsky.
+ * PROGRAMMER  : CGSG'Sr'2023.
+ *               IP5.
  * LAST UPDATE : 26.11.2024.
- * NOTE        : Module namespace 'vigl'.
+ * NOTE        : Module namespace 'pivk'.
  *
  * No part of this file may be changed without agreement of
  * Computer Graphics Support Group of 30 Phys-Math Lyceum

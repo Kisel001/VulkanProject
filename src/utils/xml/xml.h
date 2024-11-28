@@ -1,11 +1,11 @@
 /***************************************************************
-* Copyright (C) 1992-2024
-*    Computer Graphics Support Group of 30 Phys-Math Lyceum
-***************************************************************/
+ * Copyright (C) 1992-2024
+ *    Computer Graphics Support Group of 30 Phys-Math Lyceum
+ ***************************************************************/
 
 /* FILE:        xml.h
  * PROGRAMMER:  IP5
- * LAST UPDATE: 21.11.2024
+ * LAST UPDATE: 27.11.2024
  * PURPOSE:     XML parser class header file.
  * NOTE:        None.
  *
@@ -92,14 +92,7 @@ namespace pivk
      * RETURNS:
      *   (xml_node *) nullptr, if element not finded, or pointer to element.
      */
-    xml_node * FindElem( const std::string &TagName )
-    {
-      for (auto &i : SubNodes)
-        if (i.Name == TagName)
-          return &i;
-
-      return nullptr;
-    } /* End of 'FindElem' function */
+    xml_node * FindElem( const std::string &TagName );
 
     /* Find element in array of subnodes function.
      * ARGUMENTS:
@@ -109,12 +102,7 @@ namespace pivk
      *       const std::string &TagName;
      * RETURNS: None.
      */
-    VOID FindElems( std::vector<xml_node *> &NodesPtrs, const std::string &TagName )
-    {
-      for (auto &i : SubNodes)
-        if (i.Name == TagName)
-          NodesPtrs.push_back(&i);
-    } /* End of 'FindElems' function */
+    VOID FindElems( std::vector<xml_node *> &NodesPtrs, const std::string &TagName );
 
     /* XML node destructor */
     ~xml_node()
@@ -160,39 +148,7 @@ namespace pivk
      *   - filename:
      *       const std::string &Filename;
      */
-    xml_parser( const std::string &Filename )
-    {
-      FILE *F;
-    
-      /* Open file */
-      if ((F = std::fopen(Filename.c_str(), "rb")) == nullptr)
-        return;
-    
-      /* Read file */
-      std::vector<CHAR> Txt;
-      std::fseek(F, 0, SEEK_END);
-      INT size = std::ftell(F);
-      Txt.resize(UINT_PTR(size + 1));
-    
-      std::fseek(F, 0, SEEK_SET);
-      std::fread(Txt.data(), 1, size, F);
-    
-      Txt[size] = 0;
-      fclose(F);
-    
-      CHAR *ptr = Txt.data();
-    
-      /* Skip first string */
-      SkipFirstString(ptr);
-    
-      std::vector<xml_node> Nodes;
-      Nodes.reserve(20);
-    
-      /* Parse tree */
-      ParseNode(ptr, Nodes);
-    
-      Tree.Nodes = std::move(Nodes);
-    } /* End of 'xml_parser' function */
+    xml_parser( const std::string &Filename );
     
     /* Skip first string function.
      * ARGUMENTS:
@@ -200,11 +156,7 @@ namespace pivk
      *       CHAR *&Txt;
      * RETURNS: None.
      */
-    static VOID SkipFirstString( CHAR *&Txt )
-    {
-      while (*Txt++ != '\n')
-        ;
-    } /* End of 'SkipFirstString' function */
+    static VOID SkipFirstString( CHAR *&Txt );
     
     /* Skip spaces function.
      * ARGUMENTS:
@@ -212,21 +164,13 @@ namespace pivk
      *       CHAR *&Txt;
      * RETURNS: None.
      */
-    static VOID SkipSpaces( CHAR *&Txt )
-    {
-      while (isspace(*Txt) != 0 && *Txt != 0)
-        ++Txt;
-    } /* End of 'SkipSpaces' function */
+    static VOID SkipSpaces( CHAR *&Txt );
     
     /* Print spaces function.
      * ARGUMENTS: None.
      * RETURNS: None.
      */
-    VOID PrintSpaces( VOID )
-    {
-      if (CurDepth > 0)
-        printf("%*c", CurDepth * 2, ' ');
-    } /* End of 'PrintSpaces' function */
+    VOID PrintSpaces( VOID );
 
     /* XML parse node function
      * ARGUMENTS:
@@ -236,117 +180,7 @@ namespace pivk
      *       std::vector<xml_node> &Nodes;
      * RETURNS: None.
      */
-    VOID ParseNode( CHAR *&Txt, std::vector<xml_node> &Nodes )
-    {
-      CurDepth++;
-      SkipSpaces(Txt);
-      
-      // Nodes of this level
-      while (*Txt == '<')
-      {
-        Txt++;
-      
-        // Leave flag
-        if (*Txt == '/')
-        {
-          while (*Txt++ != '>')
-            ;
-          break;
-        }
-      
-        std::string TagName;
-        std::map<std::string, std::string> Args;
-      
-        TagName.reserve(1000);
-      
-        // Read name
-        while (isspace(*Txt) == 0 && *Txt != '>' && *Txt != '/')
-          TagName.push_back(*Txt++);
-      
-        if (*Txt != '>' && *Txt != '/')
-        {
-          // Read tag arguments
-          while (*Txt != '>' && *Txt != '/')
-          {
-            // Skip space
-            Txt++;
-      
-            /// Read tag argument
-            std::string ArgName;
-            std::string ArgParam;
-      
-            ArgName.reserve(1000);
-            ArgParam.reserve(1000);
-      
-            // Read argument name
-            while (*Txt != '=')
-              ArgName.push_back(*Txt++);
-      
-            // Skip '=' and '"'
-            Txt += 2;
-
-            // Read argument parameter
-            while (*Txt != '"')
-              ArgParam.push_back(*Txt++);
-      
-            // Skip '"'
-            Txt++;
-      
-            Args[ArgName] = ArgParam;
-          }
-        }
-      
-#ifdef XML_DEBUG
-        PrintSpaces();
-        printf("%s\n", TagName.c_str());
-#endif
-
-        // One tag
-        if (*Txt == '/')
-        {
-          Txt += 2;
-          SkipSpaces(Txt);
-          Nodes.push_back(std::move(xml_node(std::move(TagName), std::move(Args), std::vector<xml_node>(), std::string())));
-      
-          continue;
-        }
-      
-        Txt++;
-        SkipSpaces(Txt);
-      
-        std::string Data;
-        Data.reserve(1000);
-      
-        // Tag data
-        while (*Txt != '<')
-          Data.push_back(*Txt++);
-      
-#ifdef XML_DEBUG
-        PrintSpaces();
-        printf("{\n");
-#endif
-
-        // Subnodes of this node
-        std::vector<xml_node> SubNodes;
-
-        SubNodes.reserve(20);
-      
-        // New element
-        if (*Txt == '<')
-          ParseNode(Txt, SubNodes);
-      
-        Nodes.push_back(std::move(xml_node(std::move(TagName), std::move(Args), std::move(SubNodes), std::move(Data))));
-
-#ifdef XML_DEBUG
-        PrintSpaces();
-        printf("}\n");
-#endif
-
-        SkipSpaces(Txt);
-      }
-
-      CurDepth--;
-    } /* End of 'ParseNode' function */
+    VOID ParseNode( CHAR *&Txt, std::vector<xml_node> &Nodes );
 
     /* Default destructor */
     ~xml_parser()

@@ -43,15 +43,17 @@ namespace pivk
     std::vector<std::tuple<vec4, vec4, vec4>> Cylinders;
 
     // Sphere/cylinder shaders
-    shader *Shds[2];
+    shader *MarkersShds[2];
 
     // Sphere/cylinder pipelines and layout
-    VkPipeline Pipelines[2] {};
-    VkPipelineLayout PipelineLayouts[2] {};
+    VkPipeline MarkersPipelines[2] {};
+    //VkPipelineLayout PipelineLayouts[2] {};
 
-    vlk_buf *VertexBuffer;                     // Vertex buffer
-    //VkBuffer VertexBuffer {};                // Vertex buffer (dummy)
-    //VmaAllocation VertexBufferAllocation {}; // VMA vertex buffer allocation info (dummy)
+    vlk_buf *MarkerVertexBuffer;                // Vertex buffer
+    //VkBuffer VertexBuffer {};                 // Vertex buffer (dummy)
+    //VmaAllocation VertexBufferAllocation {};  // VMA vertex buffer allocation info (dummy)
+
+    pipeline_pattern *MarkerPipelinePattern {}; // Marker pipeline pattern
 
   public:
     /* Class constructor.
@@ -64,58 +66,58 @@ namespace pivk
     } /* End of 'marker_manager' function */
 
       /* Class destructor */
-    ~marker_manager( void )
+    ~marker_manager( VOID )
     {
-      Close();
+      //MarkersClose();
     } /* End of '~marker_manager' function */
 
-      /* Markers initialization funtion.
-      * ARGUMENTS: None.
-      * RETURNS: None.
-      */
-    VOID Init( VOID );
+    /* Markers initialization funtion.
+     * ARGUMENTS: None.
+     * RETURNS: None.
+     */
+    VOID MarkersInit( VOID );
 
     /* Markers deinitialization funtion.
-    * ARGUMENTS: None.
-    * RETURNS: None.
-    */
-    VOID Close( VOID );
+     * ARGUMENTS: None.
+     * RETURNS: None.
+     */
+    VOID MarkersClose( VOID );
 
     /* Draw all markers function.
-    * ARGUMENTS: None.
-    * RETURNS: None.
-    */
+     * ARGUMENTS: None.
+     * RETURNS: None.
+     */
     VOID DrawAllMarkers( VOID );
 
     /* Draw sphere marker function.
-    * ARGUMENTS:
-    *   - sphere center point:
-    *       const vec3 &C;
-    *   - sphere radius:
-    *       FLT R;
-    *   - sphere color:
-    *       const vec4 &Color;
-    * RETURNS: None.
-    */
+     * ARGUMENTS:
+     *   - sphere center point:
+     *       const vec3 &C;
+     *   - sphere radius:
+     *       FLT R;
+     *   - sphere color:
+     *       const vec4 &Color;
+     * RETURNS: None.
+     */
     VOID DrawSphere( const vec3 &C, FLT R, const vec4 &Color )
     {
       Spheres.push_back({{C, R}, Color});
     } /* End of 'DrawSphere' function */
 
-      /* Draw cylinder marker function.
-      * ARGUMENTS:
-      *   - cylinder first base center point:
-      *       const vec3 &P0;
-      *   - cylinder first base radius:
-      *       FLT R0;
-      *   - cylinder second base center point:
-      *       const vec3 &P1;
-      *   - cylinder second base radius:
-      *       FLT R1;
-      *   - cylinder color:
-      *       const vec4 &Color;
-      * RETURNS: None.
-      */
+    /* Draw cylinder marker function.
+     * ARGUMENTS:
+     *   - cylinder first base center point:
+     *       const vec3 &P0;
+     *   - cylinder first base radius:
+     *       FLT R0;
+     *   - cylinder second base center point:
+     *       const vec3 &P1;
+     *   - cylinder second base radius:
+     *       FLT R1;
+     *   - cylinder color:
+     *       const vec4 &Color;
+     * RETURNS: None.
+     */
     VOID DrawCylinder( const vec3 &P0, FLT R0, const vec3 &P1, FLT R1, const vec4 &Color )
     {
       Cylinders.push_back({{P0, R0}, {P1, R1}, Color});

@@ -99,7 +99,7 @@ namespace pivk
       f.close();
 
       // Compile shader
-      std::string cmd = "glslc -Ibin/shaders/include -fshader-stage=" + s.CompilerParam + " -o " + fn + ".spv " + fn + ".glsl > compile.log";
+      std::string cmd = "glslc -Ibin/shaders/__INCLUDE__/ -fshader-stage=" + s.CompilerParam + " -o " + fn + ".spv " + fn + ".glsl > compile.log";
       std::system(cmd.c_str());
 
       //SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 0x1E); 
@@ -167,8 +167,9 @@ namespace pivk
         if (s.Module != VK_NULL_HANDLE)
           vkDestroyShaderModule(Rnd->VulkanCore.Device, s.Module, nullptr), s.Module = VK_NULL_HANDLE;
 
-    std::array<VkPipelineShaderStageCreateInfo, 2> ShaderStageInfoArr;
-    //ShaderStageInfoArr.reserve(6);
+    //std::array<VkPipelineShaderStageCreateInfo, 2> ShaderStageInfoArr;
+    std::vector<VkPipelineShaderStageCreateInfo> ShaderStageInfoArr;
+    ShaderStageInfoArr.reserve(6);
 
     // Vertex shader
     if (ShaderModuleVert != VK_NULL_HANDLE)
@@ -181,7 +182,7 @@ namespace pivk
         .pName = "main",
       };
 
-      ShaderStageInfoArr[0] = (ShaderStageInfo);
+      ShaderStageInfoArr.push_back(ShaderStageInfo);
     }
     // Fragment shader
     if (ShaderModuleFrag != VK_NULL_HANDLE)
@@ -194,47 +195,47 @@ namespace pivk
         .pName = "main",
       };
 
-      ShaderStageInfoArr[1] = (ShaderStageInfo);
+      ShaderStageInfoArr.push_back(ShaderStageInfo);
     }
     // Geometry shader
-    //if (ShaderModuleGeom != VK_NULL_HANDLE)
-    //{
-    //  VkPipelineShaderStageCreateInfo ShaderStageInfo
-    //  {
-    //    .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-    //    .stage = VK_SHADER_STAGE_GEOMETRY_BIT,
-    //    .module = ShaderModuleGeom,
-    //    .pName = "main",
-    //  };
+    if (ShaderModuleGeom != VK_NULL_HANDLE)
+    {
+      VkPipelineShaderStageCreateInfo ShaderStageInfo
+      {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .stage = VK_SHADER_STAGE_GEOMETRY_BIT,
+        .module = ShaderModuleGeom,
+        .pName = "main",
+      };
 
-    //  ShaderStageInfoArr.push_back(ShaderStageInfo);
-    //}
-    //// Control shader
-    //if (ShaderModuleCtrl != VK_NULL_HANDLE)
-    //{
-    //  VkPipelineShaderStageCreateInfo ShaderStageInfo
-    //  {
-    //    .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-    //    .stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-    //    .module = ShaderModuleCtrl,
-    //    .pName = "main",
-    //  };
+      ShaderStageInfoArr.push_back(ShaderStageInfo);
+    }
+    // Control shader
+    if (ShaderModuleCtrl != VK_NULL_HANDLE)
+    {
+      VkPipelineShaderStageCreateInfo ShaderStageInfo
+      {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+        .module = ShaderModuleCtrl,
+        .pName = "main",
+      };
 
-    //  ShaderStageInfoArr.push_back(ShaderStageInfo);
-    //}
-    //// Evaluation shader
-    //if (ShaderModuleEval != VK_NULL_HANDLE)
-    //{
-    //  VkPipelineShaderStageCreateInfo ShaderStageInfo
-    //  {
-    //    .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-    //    .stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-    //    .module = ShaderModuleEval,
-    //    .pName = "main",
-    //  };
+      ShaderStageInfoArr.push_back(ShaderStageInfo);
+    }
+    // Evaluation shader
+    if (ShaderModuleEval != VK_NULL_HANDLE)
+    {
+      VkPipelineShaderStageCreateInfo ShaderStageInfo
+      {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+        .module = ShaderModuleEval,
+        .pName = "main",
+      };
 
-    //  ShaderStageInfoArr.push_back(ShaderStageInfo);
-    //}
+      ShaderStageInfoArr.push_back(ShaderStageInfo);
+    }
 
     //uint32_t                                    vertexBindingDescriptionCount;
     //const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
@@ -272,7 +273,7 @@ namespace pivk
         VertexStride += sizeof(fvec4);
         break;
 
-      // Error format
+      // Wrong format
       default:
         std::cout << "Unknown format of attribute of vulkan pattern!\n";
         break;
@@ -280,6 +281,7 @@ namespace pivk
     }
 
     // NOT const
+    // Vertex input binding description
     VkVertexInputBindingDescription BindingDescription = 
     {
       .binding = 0,
@@ -353,7 +355,7 @@ namespace pivk
       .pNext = nullptr,
       .flags = 0,
       .depthClampEnable = VK_FALSE,
-      .rasterizerDiscardEnable = VK_TRUE,
+      .rasterizerDiscardEnable = VK_FALSE,
       .polygonMode = VK_POLYGON_MODE_FILL,
       .cullMode = VK_CULL_MODE_NONE,//VK_CULL_MODE_BACK_BIT,
       .frontFace = VK_FRONT_FACE_CLOCKWISE,
@@ -422,6 +424,34 @@ namespace pivk
     DepthStencil.front = {}; // Optional
     DepthStencil.back = {}; // Optional
 
+    // Tessellation parameters
+    // CONST
+    VkPipelineTessellationDomainOriginStateCreateInfo TessellationDomainOriginStateInfo
+    {
+      .sType =  VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO, 
+      .domainOrigin = VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT,
+    };
+    VkPipelineTessellationStateCreateInfo TessellationStateInfo
+    {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
+      .pNext = &TessellationDomainOriginStateInfo,
+      .patchControlPoints = 1,
+    };
+
+    // Dynamic state setup
+    std::array<VkDynamicState, 3> DynamicStates
+    {
+      VK_DYNAMIC_STATE_POLYGON_MODE_EXT,
+      VK_DYNAMIC_STATE_VIEWPORT,
+      VK_DYNAMIC_STATE_SCISSOR
+    };
+    VkPipelineDynamicStateCreateInfo DynamicStateInfo
+    {
+      .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+      .dynamicStateCount = static_cast<UINT32>(DynamicStates.size()),
+      .pDynamicStates = DynamicStates.data(),
+    };
+
     // Graphics pipeline creare info
     // CONST ???
     VkGraphicsPipelineCreateInfo PipelineInfo =
@@ -433,13 +463,13 @@ namespace pivk
       .pStages = ShaderStageInfoArr.data(),
       .pVertexInputState = &VertexInputInfo,
       .pInputAssemblyState = &InputAssembly,
-      .pTessellationState = nullptr,
+      .pTessellationState = &TessellationStateInfo, // Optional
       .pViewportState = &ViewportState,
       .pRasterizationState = &Rasterizer,
       .pMultisampleState = &Multisampling,
-      .pDepthStencilState = nullptr,//&DepthStencil,  // Optional
+      .pDepthStencilState = &DepthStencil, // Optional
       .pColorBlendState = &ColorBlending,
-      .pDynamicState = nullptr,
+      .pDynamicState = &DynamicStateInfo,
       .layout = Rnd->VulkanCore.PipelineLayout,
       .renderPass = Rnd->VulkanCore.RenderPass,
       .subpass = 0,
@@ -447,6 +477,7 @@ namespace pivk
       .basePipelineIndex = 0,
     };
 
+    // Finally, create graphic pipeline
     if (vkCreateGraphicsPipelines(Rnd->VulkanCore.Device, VK_NULL_HANDLE, 1, &PipelineInfo, nullptr, &Pipeline) != VK_SUCCESS )
     {
       throw;

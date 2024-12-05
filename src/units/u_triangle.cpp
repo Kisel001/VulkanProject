@@ -104,9 +104,11 @@ namespace pivk
      */
     VOID Render( pivk::anim &A ) override
     {
-      Shd->Apply();
-      A.Draw(Pr);
-      A.Draw(Pr, matr::Translate(vec3(0, 0, 5)));
+      //Shd->Apply();
+      //A.Draw(Pr);
+      //A.Draw(Pr, matr::Translate(vec3(0, 0, 5)));
+      A.DrawCylinder(vec3(0, 0, 0), 2, vec3(1, 0, 1), 2, vec4(0.8, 0.47, 0.3, 1));
+      A.DrawAllMarkers();
     } /* End of 'Render' function */
 
   }; /* End of 'unit_triangle' class */

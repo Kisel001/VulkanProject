@@ -20,13 +20,7 @@
 //=========================================
 
 
-/*
- * CAMERA & MATRIX
- */
-
-// Matrix and camera data UBO representation type 
-// UPDATE: Once per camera/frame change.     
-layout(std140, binding = 0) uniform CAMERA_BUF
+layout(std140, set = 0, binding = 0) uniform CAMERA_BUF
 {
   mat4 MatrVP;               // Premultipled view and projection matrixes
   mat4 MatrV;                // Maxtrix view
@@ -62,8 +56,8 @@ layout(std140, binding = 0) uniform CAMERA_BUF
 
 // Synchronization data UBO representation type
 // UPDATE: Every frame.          
-layout(std140, binding = 1) uniform SYNC_BUF
-{
+layout(std140, set = 0, binding = 1) uniform SYNC_BUF
+{              
   vec4 TimeDTGlobalTimeDT;    // Time parameters
   vec4 IsWireFrameIsPause[4]; // WireFrame, pause, FPS, ... flags
 };
@@ -82,144 +76,97 @@ layout(std140, binding = 1) uniform SYNC_BUF
  * MATERIAL
  */
 
+struct Material
+{
+  vec4 Ka4;              // Ambient time parameters
+  vec4 KdTrans;          // Diffuse coefficient and transpanency
+  vec4 KsPh;             // Specular coefficient and Phong power value
+  bvec4 TextureFlags;    // Material texture flags
+};
+
 // Material data UBO representation type
 // UPDATE: At material creation       
-layout(std140, binding = 2) uniform MTL_BUF
+layout(std140, set = 0, binding = 2) buffer BUF_MTL
 {
-  vec4 Ka4;             // Ambient time parameters
-  vec4 KdTrans;         // Diffuse coefficient and transpanency
-  vec4 KsPh;            // Specular coefficient and Phong power value
-  bool TextureFlags[8]; // Material texture flags
+  Material Materials[];
 };
-                                               
+
+/*
+ * PUSH CONSTANTS
+ */
+
+// Push constants 
+layout(push_constant, std140) uniform DRAW_BUF
+{
+  mat4 MatrixW, MatrixWVP, MatrixWInv; // Matrix 
+  ivec4 Ids;        // Ids
+  vec4 Subdata[3];  // Subdata
+};
+              
+#define MatrW    MatrixW
+#define MatrWVP  MatrixWVP
+#define MatrWInv MatrixWInv
+#define MtlId    Ids[0]
+                                 
 /* Macroses for fast UBO material data access  */
 //#define Ka Ka4.xyz
 //#define Kd KdTrans.xyz 
-#define MtlKa Ka4.xyz
-#define MtlKd KdTrans.xyz
+#define MtlKa Materials[MtlId].Ka4.xyz
+#define MtlKd Materials[MtlId].KdTrans.xyz
 //#define Trans KdTrans.w
-#define MtlTrans KdTrans.w
-#define MtlKsPh KsPh
+#define MtlTrans Materials[MtlId].KdTrans.w
+#define MtlKsPh Materials[MtlId].KsPh
 //define Ks KsPh.xyz  
-#define MtlKs KsPh.xyz
+#define MtlKs Materials[MtlId].KsPh.xyz
 //#define Ph KsPh.w 
-#define MtlPh KsPh.w   
-#define IsTexture0 bool(TextureFlags[0])     
-#define IsTexture1 bool(TextureFlags[1])
-#define IsTexture2 bool(TextureFlags[2])
-#define IsTexture3 bool(TextureFlags[3])
+#define MtlPh Materials[MtlId].KsPh.w   
+#define IsTexture0 bool(Materials[MtlId].TextureFlags[0])     
+#define IsTexture1 bool(Materials[MtlId].TextureFlags[1])
+#define IsTexture2 bool(Materials[MtlId].TextureFlags[2])
+#define IsTexture3 bool(Materials[MtlId].TextureFlags[3])
 
 /*
  * PRIMITIVE
  */
 
-// Primitive draw parameters data UBO representation type
-// UPDATE: before primitive drawing      
-layout(std140, binding = 3) uniform PRIM_BUF
-{
-  mat4 MatrixWVP;      // Premultiplyed 'world' - 'view' - 'projection' matrixes
-  mat4 MatrixW;        // World primitive matrix
-  mat4 MatrixWInv;     // Inverse transposed world matrix (for normals)
+struct Primitive
+{                                                       
   ivec4 AddonIArray;   // Special integer parameters for shader
   vec4 AddonFArray;    // Special float parameters for shader
   vec4 AddonVArray[4]; // Special vector 4d parameters for shader
 };
+
+                           		
+// Primitive draw parameters data UBO representation type
+// UPDATE: before primitive drawing      
+layout(std140, set = 0, binding = 3) buffer PRIM_BUF
+{                
+  Primitive PrimBufs[];
+};
+
+#define PrimId Ids[1]
                                                
 /* Macroses for fast UBO Primitive data access  */
-#define MatrInv  MatrixWInv
-#define MatrWInv MatrixWInv
+//#define MatrInv  MatrixWInv
+//#define MatrWInv MatrixWInv
 #define MatrW    MatrixW
-#define MatrWVP  MatrixWVP
-#define AddonI   AddonIArray
-#define AddonF   AddonFArray
-#define AddonV   AddonVArray
+//#define MatrWVP  MatrixWVP
+#define AddonI   PrimBufs[PrimId].AddonIArray
+#define AddonF   PrimBufs[PrimId].AddonFArray
+#define AddonV   PrimBufs[PrimId].AddonVArray
+
+//layout(std140, set = 0, binding = 4) sampl
+layout(set = 1, binding = 0) uniform sampler2D Tex;
+
 
 /*
- * Base definitions of frag shader
- */
+in vec4 DrawColor;     
+in vec2 DrawTexCoord;
+in vec3 DrawNormal;
+in vec3 DrawPosition;    
+*/
 
-#ifdef FRAGMENT_SHADER
-
-layout(location = 0) out vec4 OutColor;
-layout(location = 1) out vec4 OutPosId;
-layout(location = 2) out vec4 OutNormalIsShade;
-layout(location = 3) out vec4 OutKa;
-layout(location = 4) out vec4 OutKdTrans;
-layout(location = 5) out vec4 OutKsPh;
-
-layout(binding = 0) uniform sampler2D InColor;
-layout(binding = 1) uniform sampler2D InPosId;
-layout(binding = 2) uniform sampler2D InNormalIsShade;
-layout(binding = 3) uniform sampler2D InKa;
-layout(binding = 4) uniform sampler2D InKdTrans;
-layout(binding = 5) uniform sampler2D InKsPh;
-
-layout(binding = 0) uniform sampler2D GBufs[6];
-                                             
-layout(binding = 8) uniform sampler2D SkyTex;
-
-/* Shd func */
-vec3 Shade( vec3 P, vec3 N, vec3 Ka, vec3 Kd, vec3 Ks, float Ph )
-{
-  vec3 V = normalize(P - CamLoc);
-  vec3 L = (vec3(sin(Time) * 0.30 * 5 * 5, 8, 1));
-  vec3 LDir = vec3(0, -1, 0);
-  //L = CamLoc;
-  L = vec3(5, 5, 5);
- 
-  L = L - P;
- 
-  float d = length(L);
-  L /= d;
- 
-  float
-    cc = 1,
-    cl = 0.001,
-    cq = 0.0001,
-    att = min(1, 1 / (cc + cl * d + cq * d * d));
- 
-  float ld = dot(-L, LDir);
-  float cut = cos(radians(47.0));
-  if (ld < cut)
-    att = 0;
-  else
-    att *= pow(1 - cut / ld, 0.47);
- 
-  att = 1;
- 
-  vec3 color = min(vec3(0.1), Ka);
- 
-  N = faceforward(N, V, N);
- 
-  color += Kd * max(0.5, dot(N, L));
-  //Specular
-  vec3 R;
-  color += Ks * max(0, pow(dot((R = reflect(V, N)), L), Ph));
- 
-  color *= att;
- 
-  // Add sky sphere color
-  vec2
-    ts = vec2(Time * 0.030 + atan(R.x, R.z) / (2 * acos(-1)),
-              -acos(R.y) / acos(-1));
-  vec4
-    skyc = texture(SkyTex, ts);
-  //SKY TEXTURE OFF :: 
-  //color += 0.47 * MtlKs * skyc.rgb;
- 
-  /*
-  vec2 tv = pow(abs(sin(DrawPosition.xz * 0.30 + Time)), vec2(111));
-  float t = tv.x * tv.y;
-  color = mix(vec3(0, 1, 1), color, 1 - t);
-  tv = pow(abs(sin(DrawPosition.xz * 0.30 + Time)), vec2(122115));
-  t = tv.x + tv.y;
-  color = mix(vec3(0, 1, 0), color, 1 - t);
-  */
- 
-  return color;
-}
-
-#endif // FRAGMENT_SHADER
+//#endif // FRAGMENT_SHADER
 
 
 #endif // !__COMDF_GLSL_INC_ 

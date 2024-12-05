@@ -26,12 +26,24 @@ namespace pivk
    *       const matr &World;
    * RETURNS: None.
    */
-  VOID render::Draw( const prim *Pr, const matr &World ) //const
+  VOID render::Draw( const prim *Pr, const matr &World, const std::array<fvec4, 4> *SubData ) //const
   {
-    DRAW_BUF Buf {Pr->Transform * World, {Pr->Mtl->Id, Pr->Id, 0, 0}};
+    matr w = Pr->Transform * World;
+    DRAW_BUF Buf =
+    {
+      w, w * Camera.VP, w.Inverse().Transpose(), // Matrixes
+      {Pr->Mtl->Id, Pr->Id, 0, 0},               // Subdata for primnitives and materials
+      {{}, {}, {},},                         // Array with subdata
+    };
 
+    // Copy subdata to buf
+    if (SubData != nullptr)
+      memcpy(&Buf.MarkersData, SubData->data(), sizeof(DRAW_BUF::MarkersData));
+
+    // Apply material
     Pr->Mtl->Apply();
 
+    // Push constants
     vkCmdPushConstants(VulkanCore.CommandBuffer, VulkanCore.PipelineLayout, VK_SHADER_STAGE_ALL_GRAPHICS, 0, sizeof(DRAW_BUF), &Buf);
 
 #if 0 // prim patches not used

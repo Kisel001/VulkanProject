@@ -12,7 +12,6 @@
  * No part of this file may be changed without agreement of
  * Computer Graphics Support Group of 30 Phys-Math Lyceum.
  */
-#pragma once
 
 #ifndef __pipeline_pattern_h_
 #define __pipeline_pattern_h_

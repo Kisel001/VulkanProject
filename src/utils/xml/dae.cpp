@@ -221,13 +221,9 @@ namespace pivk
             LONG Index = strtol(src, &tmp, 10);
 
             if (tmp == nullptr || tmp == src)
-            {
-              __debugbreak();
-            }
+              break;
             else
-            {
               src = tmp;
-            }
 
             switch (Format[j].first)
             {

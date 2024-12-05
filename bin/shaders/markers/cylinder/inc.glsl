@@ -17,15 +17,20 @@
  */
 
 /* Push constants data transfer structure for cylinders */
-layout(std140, push_constant) uniform cylinder_marker
-{
-  // Matrixes
-  mat4 MatrWVP;  // World-View-Project
-  mat4 MatrW;    // World
-  mat4 MatrWInv; // World inverted and transposed
-  vec4 PR0;      // First base center point and radius
-  vec4 PR1;      // Second base center point and radius
-  vec4 Color;    // Cylinder color
-}; /* End of 'cylinder_marker' structure */
+//layout(std140, push_constant) uniform cylinder_marker
+//{
+//  // Matrixes
+//  mat4 MatrWVP;  // World-View-Project
+//  mat4 MatrW;    // World
+//  mat4 MatrWInv; // World inverted and transposed
+//  vec4 PR0;      // First base center point and radius
+//  vec4 PR1;      // Second base center point and radius
+//  vec4 Color;    // Cylinder color
+//}; /* End of 'cylinder_marker' structure */
+
+// Define data of shader
+#define PR0   Subdata[0]
+#define PR1   Subdata[1]
+#define Color Subdata[2]  
 
 /* END OF 'inc.glsl' FILE */

@@ -17,14 +17,17 @@
  */
 
 /* Push constants data transfer structure for spheres */
-layout(std140, push_constant) uniform sphere_marker
-{
-  // Matrixes
-  mat4 MatrWVP;  // World-View-Project
-  mat4 MatrW;    // World
-  mat4 MatrWInv; // World inverted and transposed
-  vec4 CenterR;  // Sphere center position and radius
-  vec4 Color;    // Cylinder color
-}; /* End of 'cylinder_marker' structure */
+//layout(std140, push_constant) uniform sphere_marker
+//{
+//  // Matrixes
+//  mat4 MatrWVP;  // World-View-Project
+//  mat4 MatrW;    // World
+//  mat4 MatrWInv; // World inverted and transposed
+//  vec4 CenterR;  // Sphere center position and radius
+//  vec4 Color;    // Cylinder color
+//}; /* End of 'cylinder_marker' structure */
+
+#define CenterR Subdata[0]
+#define Color Subdata[1]
 
 /* END OF 'inc.glsl' FILE */
